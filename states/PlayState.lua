@@ -19,19 +19,32 @@ BIRD_HEIGHT = 24
 
 elapsedTime = 2
 
+MEDAL_ACHIEVED = 5
+
+medalCount = 0
+local medalImg = love.graphics.newImage('small_medal.png')
+
 function PlayState:init()
     self.bird = Bird()
     self.pipePairs = {}
     self.timer = 0
+
     self.score = 0
 
     -- initialize our last recorded Y value for a gap placement to base other gaps off of
     self.lastY = -PIPE_HEIGHT + math.random(80) + 20
+
 end
 
 function PlayState:update(dt)
     -- update timer for pipe spawning
     self.timer = self.timer + dt
+
+    if love.keyboard.wasPressed('P') or love.keyboard.wasPressed('p') then
+        gStateMachine:change('pause', {
+                    score = self.score
+                })     
+    end
 
     -- spawn a new pipe pair every second and a half
     if self.timer > elapsedTime then
@@ -57,6 +70,11 @@ function PlayState:update(dt)
         if not pair.scored then
             if pair.x + PIPE_WIDTH < self.bird.x then
                 self.score = self.score + 1
+
+                if ( self.score % 2 == 0 ) then
+                    medalCount = medalCount + 1
+                end
+
                 pair.scored = true
                 sounds['score']:play()
             end
@@ -84,7 +102,8 @@ function PlayState:update(dt)
                 sounds['hurt']:play()
 
                 gStateMachine:change('score', {
-                    score = self.score
+                    score = self.score,
+                    collision = true
                 })
             end
         end
@@ -99,28 +118,43 @@ function PlayState:update(dt)
         sounds['hurt']:play()
 
         gStateMachine:change('score', {
-            score = self.score
+            score = self.score,
+            collision = true
         })
     end
 end
 
 function PlayState:render()
+
+
     for k, pair in pairs(self.pipePairs) do
         pair:render()
     end
 
     love.graphics.setFont(flappyFont)
     love.graphics.print('Score: ' .. tostring(self.score), 8, 8)
+    if ( medalCount > 0 ) then               
+        love.graphics.draw(medalImg, 30, 40)
+        love.graphics.setFont(mediumFont)
+        love.graphics.print(tostring(medalCount), 47, 46)
+    end
 
     self.bird:render()
+   
 end
+
 
 --[[
     Called when this state is transitioned to from another state.
 ]]
-function PlayState:enter()
+function PlayState:enter(params)
     -- if we're coming from death, restart scrolling
     scrolling = true
+    self.score = params.score
+    if ( self.score == 0 ) then
+        medalCount = 0
+    end
+
 end
 
 --[[

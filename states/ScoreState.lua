@@ -16,12 +16,15 @@ ScoreState = Class{__includes = BaseState}
 ]]
 function ScoreState:enter(params)
     self.score = params.score
+    self.collision = true
 end
 
 function ScoreState:update(dt)
     -- go back to play if enter is pressed
     if love.keyboard.wasPressed('enter') or love.keyboard.wasPressed('return') then
-        gStateMachine:change('countdown')
+        gStateMachine:change('countdown', {
+            score = (self.collision == true) and 0 or self.score
+        })
     end
 end
 
